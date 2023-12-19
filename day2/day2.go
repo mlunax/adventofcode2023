@@ -22,9 +22,16 @@ type Draw struct {
 }
 
 type Game struct {
-	id       int
-	draws    []Draw
-	possible bool
+	id    int
+	draws []Draw
+	meta  Meta
+}
+
+type Meta struct {
+	possible  bool
+	red_min   int
+	green_min int
+	blue_min  int
 }
 
 func readInput() string {
@@ -49,22 +56,39 @@ func parseGameLine(line string, limits Limitations) Game {
 
 	id, _ := strconv.Atoi(strings.Split(game_prefix, " ")[1])
 	draws := []Draw{}
-	possible := true
+	meta := Meta{}
+	red_min, green_min, blue_min := 0, 0, 0
+	meta.possible = true
 	for _, v := range draws_splitted {
-		draw := Draw{}
-		draw.red, _ = strconv.Atoi(strings.Split(getColors(v, "red"), " ")[0])
-		draw.green, _ = strconv.Atoi(strings.Split(getColors(v, "green"), " ")[0])
-		draw.blue, _ = strconv.Atoi(strings.Split(getColors(v, "blue"), " ")[0])
-		if (draw.red > limits.red) || (draw.green > limits.green) || (draw.blue > limits.blue) {
-			possible = false
+		red, _ := strconv.Atoi(strings.Split(getColors(v, "red"), " ")[0])
+		green, _ := strconv.Atoi(strings.Split(getColors(v, "green"), " ")[0])
+		blue, _ := strconv.Atoi(strings.Split(getColors(v, "blue"), " ")[0])
+		if (red > limits.red) || (green > limits.green) || (blue > limits.blue) {
+			meta.possible = false
+		}
+		if red_min < red {
+			red_min = red
+		}
+		if green_min < green {
+			green_min = green
+		}
+		if blue_min < blue {
+			blue_min = blue
+		}
+		draw := Draw{
+			red:   red,
+			blue:  blue,
+			green: green,
 		}
 		draws = append(draws, draw)
 	}
-
+	meta.blue_min = blue_min
+	meta.red_min = red_min
+	meta.green_min = green_min
 	game := Game{
-		id:       id,
-		draws:    draws,
-		possible: possible,
+		id:    id,
+		draws: draws,
+		meta:  meta,
 	}
 
 	// fmt.Println(game)
@@ -84,18 +108,37 @@ func part1(lines []string) {
 			continue
 		}
 		game := parseGameLine(l, limits)
-		if game.possible {
+		if game.meta.possible {
 			games = append(games, game)
 			sum_ids += game.id
 		}
 	}
 
-	fmt.Println(sum_ids)
+	fmt.Println("Sum ids:", sum_ids)
+}
 
+func part2(lines []string) {
+	var games []Game
+
+	for _, l := range lines {
+		if len(l) == 0 {
+			continue
+		}
+		game := parseGameLine(l, Limitations{})
+		games = append(games, game)
+	}
+	sum := 0
+	for _, g := range games {
+		sum += (g.meta.red_min * g.meta.green_min * g.meta.blue_min)
+	}
+	fmt.Println(sum)
 }
 
 func main() {
 	input := readInput()
 	lines := strings.Split(input, "\n")
+	fmt.Println("---PART 1---")
 	part1(lines)
+	fmt.Println("---PART 2---")
+	part2(lines)
 }
